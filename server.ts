@@ -4,36 +4,33 @@ import bodyParser from 'body-parser';
 import fs from 'fs';
 require('dotenv').config();
 
+import { getUser, login, logout } from './src/users';
+import { User } from './types/userTypes';
+
 const app = express();
 app.use(cors());
 app.use(bodyParser.json());
 
-if (!fs.existsSync('./saveData')) fs.mkdirSync('./saveData');
-const saveJSON = (data: object, fileName: string) => {
-    fs.writeFile(fileName, JSON.stringify(data), (err) => {
-        if (err) throw err;
-        console.log('The file has been saved!');
-    });
-};
-const loadJSON = (fileName: string, defaultData = {}) => {
-    if (!fs.existsSync(fileName)) {
-        saveJSON(defaultData, fileName);
-        return defaultData;
-    }
-    return JSON.parse(fs.readFileSync(fileName).toString()) || {};
-};
+app.post('/login', async (req, res) => {
+    const {email, password} = req.body;
+    await login(email, password, res);
+});
 
-const users = loadJSON('./saveData/users.json');
+app.delete('/logout', (req, res) => {
+    const session = req.headers.authorization || '';
+    logout(session, res);
+});
 
 app.use('*', (req, res, next) => {
-    const uid = req.headers.authorization || '';
-    req.headers.user = users[uid] || null;
+    const session = req.headers.authorization || '';
+    const user = getUser(session);
+    if (!user) return res.status(201).send({ error: 'Not logged in' });
+    res.locals.user = user;
     next();
 });
 
 app.use('/progress*', (req, res, next) => {
-    const user = req.headers.user;
-    if (!user) return res.status(201).send({ error: 'Not logged in' });
+    const user: User = res.locals.user;
     next();
 });
 
