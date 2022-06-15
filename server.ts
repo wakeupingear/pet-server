@@ -1,10 +1,9 @@
-import express, { Express, Request, Response } from 'express';
+import express from 'express';
 import cors from 'cors';
 import bodyParser from 'body-parser';
-import fs from 'fs';
 require('dotenv').config();
 
-import { getUser, login, logout } from './src/users';
+import { getUser, login, logout, signup } from './src/users';
 import { User } from './types/userTypes';
 
 const app = express();
@@ -12,8 +11,13 @@ app.use(cors());
 app.use(bodyParser.json());
 
 app.post('/login', async (req, res) => {
-    const {email, password} = req.body;
+    const { email, password } = req.body;
     await login(email, password, res);
+});
+
+app.post('/signup', async (req, res) => {
+    const { email, password } = req.body;
+    await signup(email, password, res);
 });
 
 app.delete('/logout', (req, res) => {
