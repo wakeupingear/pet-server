@@ -1,23 +1,28 @@
 import express from 'express';
 import cors from 'cors';
 import bodyParser from 'body-parser';
-require('dotenv').config();
+import 'dotenv/config';
 
-import { getUser, login, logout, signup } from './src/users';
+import { getUser, login, logout, signup, signupCode } from './src/users';
 import { User } from './types/userTypes';
 
 const app = express();
 app.use(cors());
 app.use(bodyParser.json());
 
-app.post('/login', async (req, res) => {
+app.post('/login', (req, res) => {
     const { email, password } = req.body;
-    await login(email, password, res);
+    login(email, password, res);
 });
 
-app.post('/signup', async (req, res) => {
+app.post('/signup', (req, res) => {
     const { email, password } = req.body;
-    await signup(email, password, res);
+    signup(email, password, res);
+});
+
+app.post('/signup/code', (req, res) => {
+    const { email, code } = req.body;
+    signupCode(email, code, res);
 });
 
 app.delete('/logout', (req, res) => {

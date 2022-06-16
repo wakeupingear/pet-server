@@ -4,6 +4,7 @@ import uuid4 from 'uuid4';
 import bcrypt from 'bcrypt';
 
 import { User } from '../types/userTypes';
+import { sendMail, MailOptions } from './email';
 
 interface UserMap {
     [key: string]: User;
@@ -44,6 +45,13 @@ export const getUser = (session: string): User | null => {
     return users[email];
 };
 
+const updateUser = (user: Partial<User>) => {
+    const { email } = user;
+    if (!email) return;
+    users[email] = { ...users[email], ...user };
+    //saveJSON(users, './saveData/users.json');
+};
+
 export const signup = async (
     email: string,
     password: string,
@@ -60,7 +68,40 @@ export const signup = async (
         passwordHash: await hashPassword(password),
     };
 
+    sendMail({
+        to: email,
+        from: 'old dude',
+        subject: 'Pet-Server: Signup',
+        text: `
+            Welcome to Pet-Server!
+            Please enter the following code to complete your signup:
+            ${code}
+        `,
+    });
+
     return res.send({ sessionToken: 'waiting' });
+};
+
+export const signupCode = async (
+    email: string,
+    code: number,
+    res: Response
+) => {
+    const userAuth = userAuthCodes[email];
+    if (!userAuth) {
+        return res.status(404).send({ error: 'User does not exist' });
+    }
+    if (userAuth.code !== code) {
+        return res.status(401).send({ error: 'Invalid code' });
+    }
+
+    const sessionToken = uuid4();
+    userSessions[sessionToken] = email;
+    const newUser = {} as User;
+    newUser.email = email;
+    newUser.sessionToken = sessionToken;
+    updateUser(newUser);
+    return res.send({ sessionToken: sessionToken });
 };
 
 export const login = async (email: string, password: string, res: Response) => {
