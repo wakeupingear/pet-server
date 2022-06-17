@@ -3,7 +3,15 @@ import cors from 'cors';
 import bodyParser from 'body-parser';
 import 'dotenv/config';
 
-import { getUser, login, logout, signup, signupCode } from './src/users';
+import {
+    getUser,
+    login,
+    logout,
+    resetUsers,
+    signup,
+    signupCode,
+    updateUser,
+} from './src/users';
 import { User } from './types/userTypes';
 
 const app = express();
@@ -30,6 +38,18 @@ app.delete('/logout', (req, res) => {
     logout(session, res);
 });
 
+app.get('/admin/reset', async (req, res) => {
+    const password = req.headers.authorization;
+    if (password !== 'foojardigibutterjoe') {
+        return res.status(401).send();
+    }
+
+    await resetUsers();
+    res.send({
+        result: 'It is done',
+    });
+});
+
 app.use('*', (req, res, next) => {
     const session = req.headers.authorization || '';
     const user = getUser(session);
@@ -44,22 +64,32 @@ app.use('/progress*', (req, res, next) => {
 });
 
 app.get('/progress*', (req, res) => {
-    const { host, pathname } = req.query;
-    res.send({
+    const user: User = res.locals.user;
+    const { host, pathname, needSettings } = req.query;
+    const result = {
         progress: 'intro',
-    });
+        settings: {},
+    };
+    if (user) {
+        if (needSettings === 'true') result.settings = user.settings;
+    }
+    res.send(result);
 });
 
 app.post('/progress', (req, res) => {
-    console.log(req.body);
     res.send({
         progress: '100',
     });
 });
 
 app.post('/settings', (req, res) => {
+    const user: User = res.locals.user;
     const { settings } = req.body;
-    return res.status(200).send({});
+    user.settings = settings;
+    updateUser(user);
+    return res.status(200).send({
+        result: 'ok',
+    });
 });
 
 app.use('*', (req, res) => {

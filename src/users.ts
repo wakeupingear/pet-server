@@ -4,22 +4,22 @@ import uuid4 from 'uuid4';
 import bcrypt from 'bcrypt';
 
 import { User } from '../types/userTypes';
-import { sendMail, MailOptions } from './email';
+import { sendMail } from './email';
 
 interface UserMap {
     [key: string]: User;
 }
 
-if (!fs.existsSync('./saveData')) fs.mkdirSync('./saveData');
-const saveJSON = (data: object, fileName: string) => {
+const saveJSON = (data: object, fileName: string, checkDir = true) => {
+    if (checkDir && !fs.existsSync('./saveData')) fs.mkdirSync('./saveData');
     fs.writeFile(fileName, JSON.stringify(data), (err) => {
         if (err) throw err;
-        console.log('The file has been saved!');
     });
 };
 const loadJSON = (fileName: string, defaultData = {}) => {
+    if (!fs.existsSync('./saveData')) fs.mkdirSync('./saveData');
     if (!fs.existsSync(fileName)) {
-        saveJSON(defaultData, fileName);
+        saveJSON(defaultData, fileName, false);
         return defaultData;
     }
     return JSON.parse(fs.readFileSync(fileName).toString()) || {};
@@ -30,14 +30,24 @@ const hashPassword = async (password: string) => {
     return await bcrypt.hash(password, salt);
 };
 
-const users: UserMap = loadJSON('./saveData/users.json');
-const userSessions: { [key: string]: string } = {};
-const userAuthCodes: {
+let users: UserMap = loadJSON('./saveData/users.json');
+let userSessions: { [key: string]: string } = loadJSON(
+    './saveData/userSessions.json'
+);
+let userAuthCodes: {
     [key: string]: {
         code: number;
         passwordHash: string;
     };
 } = {};
+
+export const resetUsers = async () => {
+    if (fs.existsSync('saveData'))
+        fs.rmdirSync('saveData', { recursive: true });
+    users = {};
+    userSessions = {};
+    userAuthCodes = {};
+};
 
 export const getUser = (session: string): User | null => {
     const email = userSessions[session];
@@ -45,11 +55,11 @@ export const getUser = (session: string): User | null => {
     return users[email];
 };
 
-const updateUser = (user: Partial<User>) => {
+export const updateUser = (user: Partial<User>) => {
     const { email } = user;
     if (!email) return;
     users[email] = { ...users[email], ...user };
-    //saveJSON(users, './saveData/users.json');
+    saveJSON(users, './saveData/users.json');
 };
 
 export const signup = async (
@@ -101,7 +111,9 @@ export const signupCode = async (
     newUser.email = email;
     newUser.sessionToken = sessionToken;
     updateUser(newUser);
-    return res.send({ sessionToken: sessionToken });
+    res.send({ sessionToken: sessionToken });
+
+    saveJSON(userSessions, './saveData/userSessions.json');
 };
 
 export const login = async (email: string, password: string, res: Response) => {

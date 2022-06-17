@@ -9,12 +9,10 @@ let transporter = nodemailer.createTransport({
     port: 465,
     auth: {
         type: 'OAuth2',
-        user: 'willf668@gmail.com',
-        clientId:
-            '927404576135-ed0oqe4sbqrrp50m10ebbdbqrhp6orb4.apps.googleusercontent.com',
-        clientSecret: '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',
-        refreshToken:
-            '1//04BariPWK8F0MCgYIARAAGAQSNwF-L9Ir_96MztBB85bg7spoMUnzvKYquffpogeG70wxXjGdeEz0dwiAw_hfGvmVo_FySkct9sY',
+        user: process.env.EMAIL,
+        clientId: process.env.GMAIL_CLIENT_ID,
+        clientSecret: process.env.GMAIL_CLIENT_SECRET,
+        refreshToken: process.env.GMAIL_REFRESH_TOKEN,
     },
 });
 

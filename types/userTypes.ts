@@ -6,6 +6,9 @@ export type User = {
     email: string;
     sessionToken?: string;
     passwordHash: string;
+    settings: {
+        [key: string]: any;
+    };
 };
 
 export type Creature = {
