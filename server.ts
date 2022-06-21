@@ -12,7 +12,8 @@ import {
     signupCode,
     updateUser,
 } from './src/users';
-import { User } from './types/userTypes';
+import { Creature, User } from './types/userTypes';
+import uuid4 from 'uuid4';
 
 const app = express();
 app.use(cors());
@@ -58,17 +59,13 @@ app.use('*', (req, res, next) => {
     next();
 });
 
-app.use('/progress*', (req, res, next) => {
-    const user: User = res.locals.user;
-    next();
-});
-
 app.get('/progress*', (req, res) => {
     const user: User = res.locals.user;
     const { host, pathname, needSettings } = req.query;
     const result = {
         progress: 'intro',
         settings: {},
+        creature: user.currentCreature && user.creatures[user.currentCreature],
     };
     if (user) {
         if (needSettings === 'true') result.settings = user.settings;
@@ -79,6 +76,24 @@ app.get('/progress*', (req, res) => {
 app.post('/progress', (req, res) => {
     res.send({
         progress: '100',
+    });
+});
+
+app.post('/creature', (req, res) => {
+    const user: User = res.locals.user;
+    const creature: Creature | null = req.body.creature;
+    if (!creature) {
+        if (req.body.isDev) delete user.creatures[user.currentCreature];
+        user.currentCreature = '';
+    } else {
+        user.currentCreature = uuid4();
+        if (user.creatures === undefined) user.creatures = {};
+        user.creatures[user.currentCreature] = creature;
+    }
+    updateUser(user);
+
+    res.send({
+        result: 'ok',
     });
 });
 

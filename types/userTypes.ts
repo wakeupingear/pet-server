@@ -15,6 +15,6 @@ export type Creature = {
     name: string;
     health: number;
     styles: {
-        color: string;
+        [key: string]: any;
     };
 };
