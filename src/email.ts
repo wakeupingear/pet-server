@@ -34,7 +34,7 @@ export const sendMail = async (options: MailOptions) => {
         },
         (e) => {
             if (e) {
-                console.log(e);
+                console.error(e);
             }
             transporter.close();
         }

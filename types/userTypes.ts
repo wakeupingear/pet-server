@@ -17,4 +17,5 @@ export type Creature = {
     styles: {
         [key: string]: any;
     };
+    location: string;
 };
